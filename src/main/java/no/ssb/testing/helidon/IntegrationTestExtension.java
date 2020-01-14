@@ -140,10 +140,14 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
 
     @Override
     public void afterAll(ExtensionContext extensionContext) {
-        server.shutdown();
+        if (server != null) {
+            server.shutdown();
+        }
         application.stop();
         shutdownAndAwaitTermination(grpcChannel);
-        awaitTerminationOfGrpcServer(server);
+        if (server != null) {
+            awaitTerminationOfGrpcServer(server);
+        }
     }
 
     void shutdownAndAwaitTermination(ManagedChannel managedChannel) {
