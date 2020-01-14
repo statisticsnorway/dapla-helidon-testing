@@ -58,27 +58,30 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
         }
         configSourceSupplierList.add(classpath("application.yaml"));
 
-        Class<?> testClass = extensionContext.getRequiredTestClass();
-        GrpcMockRegistryConfig applicationConfig = testClass.getDeclaredAnnotation(GrpcMockRegistryConfig.class);
-        Class<? extends GrpcMockRegistry> registryClazz = applicationConfig.value();
-        Constructor<?> constructor = registryClazz.getDeclaredConstructors()[0];
-
-        GrpcMockRegistry grpcMockRegistry = (GrpcMockRegistry) constructor.newInstance();
-
-        String serverName = InProcessServerBuilder.generateName();
-
-        MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
-
-        for (BindableService bindableService : grpcMockRegistry) {
-            serviceRegistry.addService(bindableService);
-        }
-
-        server = InProcessServerBuilder.forName(serverName).fallbackHandlerRegistry(serviceRegistry).directExecutor().build().start();
-        ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
-
         ServiceLoader<HelidonApplicationBuilder> applicationBuilderLoader = ServiceLoader.load(HelidonApplicationBuilder.class);
         HelidonApplicationBuilder applicationBuilder = applicationBuilderLoader.findFirst().orElseThrow();
-        applicationBuilder.override(ManagedChannel.class, channel);
+
+        Class<?> testClass = extensionContext.getRequiredTestClass();
+        GrpcMockRegistryConfig applicationConfig = testClass.getDeclaredAnnotation(GrpcMockRegistryConfig.class);
+        if (applicationConfig != null) {
+            Class<? extends GrpcMockRegistry> registryClazz = applicationConfig.value();
+            Constructor<?> constructor = registryClazz.getDeclaredConstructors()[0];
+            GrpcMockRegistry grpcMockRegistry = (GrpcMockRegistry) constructor.newInstance();
+
+            String serverName = InProcessServerBuilder.generateName();
+
+            MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
+
+            for (BindableService bindableService : grpcMockRegistry) {
+                serviceRegistry.addService(bindableService);
+            }
+
+            server = InProcessServerBuilder.forName(serverName).fallbackHandlerRegistry(serviceRegistry).directExecutor().build().start();
+            ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+
+            applicationBuilder.override(ManagedChannel.class, channel);
+        }
+
         application = applicationBuilder.build();
 
         application.start().toCompletableFuture().get(5, TimeUnit.SECONDS);
