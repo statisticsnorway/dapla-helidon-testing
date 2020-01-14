@@ -8,6 +8,7 @@ import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.util.MutableHandlerRegistry;
+import io.helidon.config.Config;
 import io.helidon.config.spi.ConfigSource;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.webserver.WebServer;
@@ -39,6 +40,9 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        ServiceLoader<HelidonApplicationBuilder> applicationBuilderLoader = ServiceLoader.load(HelidonApplicationBuilder.class);
+        HelidonApplicationBuilder applicationBuilder = applicationBuilderLoader.findFirst().orElseThrow();
+
         List<Supplier<ConfigSource>> configSourceSupplierList = new LinkedList<>();
         String overrideFile = System.getenv("HELIDON_CONFIG_FILE");
         if (overrideFile != null) {
@@ -57,9 +61,8 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
             configSourceSupplierList.add(classpath("application-dev.yaml"));
         }
         configSourceSupplierList.add(classpath("application.yaml"));
-
-        ServiceLoader<HelidonApplicationBuilder> applicationBuilderLoader = ServiceLoader.load(HelidonApplicationBuilder.class);
-        HelidonApplicationBuilder applicationBuilder = applicationBuilderLoader.findFirst().orElseThrow();
+        Config config = Config.builder().sources(configSourceSupplierList).build();
+        applicationBuilder.override(Config.class, config);
 
         Class<?> testClass = extensionContext.getRequiredTestClass();
         GrpcMockRegistryConfig applicationConfig = testClass.getDeclaredAnnotation(GrpcMockRegistryConfig.class);
