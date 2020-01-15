@@ -169,8 +169,8 @@ public final class TestClient {
         }
     }
 
-    public ResponseHelper<String> get(String uri) {
-        return get(uri, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    public ResponseHelper<String> get(String uri, String... headersKeyAndValue) {
+        return get(uri, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8), headersKeyAndValue);
     }
 
     static class ProtobufSubscriber<R> implements HttpResponse.BodySubscriber<R> {
@@ -213,11 +213,13 @@ public final class TestClient {
         return get(uri, responseInfo -> new ProtobufSubscriber(clazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo)));
     }
 
-    public <R> ResponseHelper<R> get(String uri, HttpResponse.BodyHandler<R> bodyHandler) {
+    public <R> ResponseHelper<R> get(String uri, HttpResponse.BodyHandler<R> bodyHandler, String... headersKeyAndValue) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(toUri(uri))
-                    .GET()
-                    .build();
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder(toUri(uri)).GET();
+            if (headersKeyAndValue.length > 1) {
+                requestBuilder.headers(headersKeyAndValue);
+            }
+            HttpRequest request = requestBuilder.build();
             return new ResponseHelper<>(client.send(request, bodyHandler));
         } catch (Exception e) {
             LOG.error("Error: {}", captureStackTrace(e));
