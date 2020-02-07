@@ -123,6 +123,10 @@ public final class TestClient {
         return post(uri, HttpRequest.BodyPublishers.noBody(), HttpResponse.BodyHandlers.ofString());
     }
 
+    public <T> ResponseHelper<String> post(String uri, T pojo) {
+        return post(uri, HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+    }
+
     public ResponseHelper<String> post(String uri, String body) {
         return post(uri, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
     }
