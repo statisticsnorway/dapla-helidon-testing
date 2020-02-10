@@ -123,16 +123,48 @@ public final class TestClient {
         return post(uri, HttpRequest.BodyPublishers.noBody(), HttpResponse.BodyHandlers.ofString());
     }
 
+    public <R> ResponseHelper<R> post(String uri, Class<R> responseClazz) {
+        return post(
+                uri,
+                HttpRequest.BodyPublishers.noBody(),
+                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo))
+        );
+    }
+
     public <T> ResponseHelper<String> post(String uri, T pojo) {
         return post(uri, HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+    }
+
+    public <R, T> ResponseHelper<R> post(String uri, T pojo, Class<R> responseClazz) {
+        return post(
+                uri,
+                HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8),
+                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo))
+        );
     }
 
     public ResponseHelper<String> post(String uri, String body) {
         return post(uri, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
     }
 
+    public <R> ResponseHelper<R> post(String uri, String body, Class<R> responseClazz) {
+        return post(
+                uri,
+                HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8),
+                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo))
+        );
+    }
+
     public ResponseHelper<String> postJson(String uri, String body) {
         return postJson(uri, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+    }
+
+    public <R> ResponseHelper<R> postJson(String uri, String body, Class<R> responseClazz) {
+        return postJson(
+                uri,
+                HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8),
+                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo))
+        );
     }
 
     public <R> ResponseHelper<R> post(String uri, HttpRequest.BodyPublisher bodyPublisher, HttpResponse.BodyHandler<R> bodyHandler) {
@@ -209,7 +241,14 @@ public final class TestClient {
         @Override
         public CompletionStage<R> getBody() {
             return stringBodySubscriber.getBody()
-                    .thenApply(body -> ProtobufJsonUtils.toPojo(body, clazz));
+                    .thenApply(json -> {
+                        try {
+                            return ProtobufJsonUtils.toPojo(json, clazz);
+                        } catch (Throwable e) {
+                            LOG.error("Error while attempting to convert an alleged json string into a protobuf message instance: protobuf-class: '{}', string: '{}'", clazz.getName(), json);
+                            throw e;
+                        }
+                    });
         }
     }
 
