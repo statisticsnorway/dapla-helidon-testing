@@ -143,8 +143,12 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
         if (server != null) {
             server.shutdown();
         }
-        application.stop();
-        shutdownAndAwaitTermination(grpcChannel);
+        if (application != null) {
+            application.stop();
+        }
+        if (grpcChannel != null) {
+            shutdownAndAwaitTermination(grpcChannel);
+        }
         if (server != null) {
             awaitTerminationOfGrpcServer(server);
         }
