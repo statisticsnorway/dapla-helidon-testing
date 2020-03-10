@@ -95,97 +95,104 @@ public final class TestClient {
         }
     }
 
-    public ResponseHelper<String> put(String uri) {
-        return put(uri, HttpRequest.BodyPublishers.noBody(), HttpResponse.BodyHandlers.ofString());
+    public ResponseHelper<String> put(String uri, String... headers) {
+        return put(uri, HttpRequest.BodyPublishers.noBody(), HttpResponse.BodyHandlers.ofString(), headers);
     }
 
-    public <T> ResponseHelper<String> put(String uri, T pojo) {
-        return put(uri, HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+    public <T> ResponseHelper<String> put(String uri, T pojo, String... headers) {
+        return put(uri, HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString(), headers);
     }
 
-    public ResponseHelper<String> put(String uri, String body) {
-        return put(uri, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+    public ResponseHelper<String> put(String uri, String body, String... headers) {
+        return put(uri, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString(), headers);
     }
 
-    public <R> ResponseHelper<R> put(String uri, HttpRequest.BodyPublisher bodyPublisher, HttpResponse.BodyHandler<R> bodyHandler) {
+    public <R> ResponseHelper<R> put(String uri, HttpRequest.BodyPublisher bodyPublisher, HttpResponse.BodyHandler<R> bodyHandler, String... headers) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(toUri(uri))
-                    .PUT(bodyPublisher)
-                    .build();
-            return new ResponseHelper<>(client.send(request, bodyHandler));
+            final HttpRequest.Builder builder = HttpRequest.newBuilder(toUri(uri)).PUT(bodyPublisher);
+            if (headers != null && headers.length > 0) {
+                builder.headers(headers);
+            }
+            return new ResponseHelper<>(client.send(builder.build(), bodyHandler));
         } catch (Exception e) {
             LOG.error("Error: {}", captureStackTrace(e));
             throw new RuntimeException(e);
         }
     }
 
-    public ResponseHelper<String> post(String uri) {
-        return post(uri, HttpRequest.BodyPublishers.noBody(), HttpResponse.BodyHandlers.ofString());
+    public ResponseHelper<String> post(String uri, String... headers) {
+        return post(uri, HttpRequest.BodyPublishers.noBody(), HttpResponse.BodyHandlers.ofString(), headers);
     }
 
-    public <R> ResponseHelper<R> post(String uri, Class<R> responseClazz) {
+    public <R> ResponseHelper<R> post(String uri, Class<R> responseClazz, String... headers) {
         return post(
                 uri,
                 HttpRequest.BodyPublishers.noBody(),
-                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo))
+                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo)),
+                headers
         );
     }
 
-    public <T> ResponseHelper<String> post(String uri, T pojo) {
-        return post(uri, HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+    public <T> ResponseHelper<String> post(String uri, T pojo, String... headers) {
+        return post(uri, HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString(), headers);
     }
 
-    public <R, T> ResponseHelper<R> post(String uri, T pojo, Class<R> responseClazz) {
+    public <R, T> ResponseHelper<R> post(String uri, T pojo, Class<R> responseClazz, String... headers) {
         return post(
                 uri,
                 HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8),
-                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo))
+                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo)),
+                headers
         );
     }
 
-    public ResponseHelper<String> post(String uri, String body) {
-        return post(uri, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+    public ResponseHelper<String> post(String uri, String body, String... headers) {
+        return post(uri, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString(), headers);
     }
 
-    public <R> ResponseHelper<R> post(String uri, String body, Class<R> responseClazz) {
+    public <R> ResponseHelper<R> post(String uri, String body, Class<R> responseClazz, String... headers) {
         return post(
                 uri,
                 HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8),
-                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo))
+                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo)),
+                headers
         );
     }
 
-    public ResponseHelper<String> postJson(String uri, String body) {
-        return postJson(uri, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString());
+    public ResponseHelper<String> postJson(String uri, String body, String... headers) {
+        return postJson(uri, HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString(), headers);
     }
 
-    public <R> ResponseHelper<R> postJson(String uri, String body, Class<R> responseClazz) {
+    public <R> ResponseHelper<R> postJson(String uri, String body, Class<R> responseClazz, String... headers) {
         return postJson(
                 uri,
                 HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8),
-                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo))
+                responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo)),
+                headers
         );
     }
 
-    public <R> ResponseHelper<R> post(String uri, HttpRequest.BodyPublisher bodyPublisher, HttpResponse.BodyHandler<R> bodyHandler) {
+    public <R> ResponseHelper<R> post(String uri, HttpRequest.BodyPublisher bodyPublisher, HttpResponse.BodyHandler<R> bodyHandler, String... headers) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(toUri(uri))
-                    .POST(bodyPublisher)
-                    .build();
-            return new ResponseHelper<>(client.send(request, bodyHandler));
+            final HttpRequest.Builder builder = HttpRequest.newBuilder(toUri(uri)).POST(bodyPublisher);
+            if (headers != null && headers.length > 0) {
+                builder.headers(headers);
+            }
+            return new ResponseHelper<>(client.send(builder.build(), bodyHandler));
         } catch (Exception e) {
             LOG.error("Error: {}", captureStackTrace(e));
             throw new RuntimeException(e);
         }
     }
 
-    public <R> ResponseHelper<R> postJson(String uri, HttpRequest.BodyPublisher bodyPublisher, HttpResponse.BodyHandler<R> bodyHandler) {
+    public <R> ResponseHelper<R> postJson(String uri, HttpRequest.BodyPublisher bodyPublisher, HttpResponse.BodyHandler<R> bodyHandler, String... headers) {
         try {
-            HttpRequest request = HttpRequest.newBuilder(toUri(uri))
-                    .POST(bodyPublisher)
-                    .header("Content-Type", "application/json")
-                    .build();
-            return new ResponseHelper<>(client.send(request, bodyHandler));
+            final HttpRequest.Builder builder = HttpRequest.newBuilder(toUri(uri)).POST(bodyPublisher);
+            if (headers != null && headers.length > 0) {
+                builder.headers(headers);
+            }
+            builder.header("Content-Type", "application/json");
+            return new ResponseHelper<>(client.send(builder.build(), bodyHandler));
         } catch (Exception e) {
             LOG.error("Error: {}", captureStackTrace(e));
             throw new RuntimeException(e);
