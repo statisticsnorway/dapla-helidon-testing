@@ -9,6 +9,7 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.util.MutableHandlerRegistry;
 import io.helidon.config.Config;
+import io.helidon.config.ConfigSources;
 import io.helidon.config.spi.ConfigSource;
 import io.helidon.grpc.server.GrpcServer;
 import io.helidon.webserver.WebServer;
@@ -22,8 +23,10 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import javax.inject.Inject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -40,10 +43,18 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
-        ServiceLoader<HelidonApplicationBuilder> applicationBuilderLoader = ServiceLoader.load(HelidonApplicationBuilder.class);
-        HelidonApplicationBuilder applicationBuilder = applicationBuilderLoader.findFirst().orElseThrow();
+        Class<?> testClass = extensionContext.getRequiredTestClass();
 
         List<Supplier<ConfigSource>> configSourceSupplierList = new LinkedList<>();
+        ConfigOverride configOverride = testClass.getDeclaredAnnotation(ConfigOverride.class);
+        if (configOverride != null) {
+            String[] overrideArray = configOverride.value();
+            Map<String, String> configOverrideMap = new LinkedHashMap<>();
+            for (int i = 0; i < overrideArray.length; i += 2) {
+                configOverrideMap.put(overrideArray[i], overrideArray[i + 1]);
+            }
+            configSourceSupplierList.add(ConfigSources.create(configOverrideMap));
+        }
         String overrideFile = System.getenv("HELIDON_CONFIG_FILE");
         if (overrideFile != null) {
             configSourceSupplierList.add(file(overrideFile).optional());
@@ -62,9 +73,11 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
         }
         configSourceSupplierList.add(classpath("application.yaml"));
         Config config = Config.builder().sources(configSourceSupplierList).build();
+
+        ServiceLoader<HelidonApplicationBuilder> applicationBuilderLoader = ServiceLoader.load(HelidonApplicationBuilder.class);
+        HelidonApplicationBuilder applicationBuilder = applicationBuilderLoader.findFirst().orElseThrow();
         applicationBuilder.override(Config.class, config);
 
-        Class<?> testClass = extensionContext.getRequiredTestClass();
         GrpcMockRegistryConfig applicationConfig = testClass.getDeclaredAnnotation(GrpcMockRegistryConfig.class);
         if (applicationConfig != null) {
             Class<? extends GrpcMockRegistry> registryClazz = applicationConfig.value();
