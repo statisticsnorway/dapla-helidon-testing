@@ -101,12 +101,17 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
         application = applicationBuilder.build();
 
         application.start().toCompletableFuture().get(5, TimeUnit.SECONDS);
+        GrpcServer grpcServer = application.get(GrpcServer.class);
+        if (grpcServer != null) {
+            grpcChannel = ManagedChannelBuilder.forAddress("localhost", grpcServer.port())
+                    .usePlaintext()
+                    .build();
+        }
 
-        grpcChannel = ManagedChannelBuilder.forAddress("localhost", application.get(GrpcServer.class).port())
-                .usePlaintext()
-                .build();
-
-        client = TestClient.newClient("localhost", application.get(WebServer.class).port());
+        WebServer webServer = application.get(WebServer.class);
+        if (webServer != null) {
+            client = TestClient.newClient("localhost", webServer.port());
+        }
     }
 
     @Override
