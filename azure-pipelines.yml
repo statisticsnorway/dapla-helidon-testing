@@ -55,7 +55,7 @@ jobs:
           mavenServiceConnections:  'mvnSsbBipPublic, mvnSsbBipReleases, mvnSsbBipSnapshots'
 
       # Maven caching to speed up pipeline build time
-      - template: maven/task-cache@templates
+      - template: maven/task-cache.yml@templates
 
       - template: maven/task-sonar-analyze.yml@templates
 
