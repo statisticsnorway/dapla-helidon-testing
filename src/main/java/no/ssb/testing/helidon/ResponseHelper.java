@@ -40,6 +40,11 @@ public class ResponseHelper<T> {
         return this;
     }
 
+    public ResponseHelper<T> expect401Unauthorized() {
+        assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.statusCode(), String.valueOf(body));
+        return this;
+    }
+
     public ResponseHelper<T> expect400BadRequest() {
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.statusCode(), String.valueOf(body));
         return this;
