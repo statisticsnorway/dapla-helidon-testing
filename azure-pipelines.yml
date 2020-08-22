@@ -9,14 +9,11 @@ trigger:
     include:
       - '*'
 resources:
-  containers:
-    - container:  'ubuntu_container_for_build_to_nexus'
-      image:      'ubuntu:latest'
   repositories:
     - repository: templates
       type:       github
       name:       statisticsnorway/azure-pipelines-templates
-      ref:        refs/tags/0.0.5
+      ref:        refs/heads/feature/parameterize-checkstyle
       endpoint:   statisticsnorway (6)
 
 # Pipeline will be run on this base image
@@ -32,32 +29,30 @@ variables:
   - group:  Hemmeligheter
 
   # Variables defined here
+  - name: fullSha
+    value: '$(Build.SourceVersion)'
+  - name: imageName
+    value: 'eu.gcr.io/prod-bip/ssb/dapla/dapla-helidon-testing'
+  - name: repoName
+    value: 'prod-bip/ssb/dapla/dapla-helidon-testing'
   - name:   MAVEN_CACHE_FOLDER
     value:  $(Pipeline.Workspace)/.m2/repository
   - name:   MAVEN_OPTS
     value:  '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
 
-# Job which will run mvn build, mvn install
+# Job which runs mvn test and verify, Sonar Analysis (if branch is master), mvn install,
+# builds Docker image, pushes this to GCR and checks for any image vulnerabilities
 jobs:
-  - job: buildTest
-    displayName: 'compile deploy app'
+  - template: complete-builds/job-test-coverage-build-gcr.yml@templates
+    parameters:
+      project: dapla
+      imageName: dapla-blueprint
 
-    # Job condition: Run these jobs on any branch, but not on tags
-    condition:  not(startsWith(variables['Build.SourceBranch'], 'refs/tags'))
-
-    # Steps in this Job
-    steps:
-
-      # Authenticate Maven to Nexus using predefined Service Connections
-      - task:         MavenAuthenticate@0
-        displayName:  'Maven authenticate'
-        inputs:
-          mavenServiceConnections:  'mvnSsbBipPublic, mvnSsbBipReleases, mvnSsbBipSnapshots'
-
-      # Maven caching to speed up pipeline build time
-      - template: maven/task-cache.yml@templates
-
-      - template: maven/task-sonar-analyze.yml@templates
-
-      # Deploy artifact to Nexus
-      - template: maven/task-install-and-deploy-to-nexus.yml@templates
+  # Job which pulls the Docker image with the correct tag (image-scan-tag) from GCR, tags this
+  # with the git tag, and pushes that back to GCR.
+  # The job triggers when any tag was committed to GitHub, which means all tags in
+  # the code repo are propagated to the corresponding (newly built) image in GCR.
+  - template: docker/docker-tag-for-production.yml@templates
+    parameters:
+      tagToTag: ${{ variables.imageName }}
+      gcrImageName: ${{ variables.imageName }}
