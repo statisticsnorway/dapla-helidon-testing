@@ -13,7 +13,7 @@ resources:
     - repository: templates
       type:       github
       name:       statisticsnorway/azure-pipelines-templates
-      ref:        refs/heads/feature/parameterize-checkstyle
+      ref:        refs/tags/0.0.8
       endpoint:   statisticsnorway (6)
 
 # Pipeline will be run on this base image
