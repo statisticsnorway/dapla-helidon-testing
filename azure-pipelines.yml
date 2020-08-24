@@ -38,6 +38,7 @@ variables:
 jobs:
   - job: buildTest
     displayName: 'compile deploy app'
+    container: maven:3-jdk-11
 
     # Job condition: Run these jobs on any branch, but not on tags
     condition:  not(startsWith(variables['Build.SourceBranch'], 'refs/tags'))
