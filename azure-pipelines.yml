@@ -46,12 +46,12 @@ jobs:
     steps:
 
       # Authenticate Maven to Nexus using predefined Service Connections
-      - template: maven/task-authenticate.yml
+      - template: maven/task-authenticate.yml@templates
 
       # Maven caching to speed up pipeline build time
       - template: maven/task-cache.yml@templates
 
-      - template: maven/task-test-and-verify.yml
+      - template: maven/task-test-and-verify.yml@templates
 
       - template: maven/task-sonar-analyze.yml@templates
 
