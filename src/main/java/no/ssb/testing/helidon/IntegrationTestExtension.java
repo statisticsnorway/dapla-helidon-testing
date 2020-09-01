@@ -65,8 +65,8 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
         }
         if (profile.equalsIgnoreCase("dev")) {
             configSourceSupplierList.add(classpath("application-dev.yaml"));
-        } else if (profile.equalsIgnoreCase("drone")) {
-            configSourceSupplierList.add(classpath("application-drone.yaml"));
+        } else if (profile.equalsIgnoreCase("azure")) {
+            configSourceSupplierList.add(classpath("application-azure.yaml"));
         } else {
             // default to dev
             configSourceSupplierList.add(classpath("application-dev.yaml"));
