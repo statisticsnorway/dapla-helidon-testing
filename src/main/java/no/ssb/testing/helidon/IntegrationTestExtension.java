@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import static io.helidon.config.ConfigSources.classpath;
 import static io.helidon.config.ConfigSources.file;
+import static java.util.Optional.ofNullable;
 
 public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCallback, AfterAllCallback {
 
@@ -55,11 +56,11 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
             }
             configSourceSupplierList.add(ConfigSources.create(configOverrideMap));
         }
-        String overrideFile = System.getenv("HELIDON_CONFIG_FILE");
+        String overrideFile = ofNullable(System.getProperty("helidon.config.file")).orElseGet(() -> System.getenv("HELIDON_CONFIG_FILE"));
         if (overrideFile != null) {
             configSourceSupplierList.add(file(overrideFile).optional());
         }
-        String profile = System.getenv("HELIDON_CONFIG_PROFILE");
+        String profile = ofNullable(System.getProperty("helidon.config.profile")).orElseGet(() -> System.getenv("HELIDON_CONFIG_PROFILE"));
         if (profile == null) {
             profile = "dev";
         }
