@@ -36,18 +36,12 @@
         <dependency>
             <groupId>no.ssb.helidon</groupId>
             <artifactId>helidon-application</artifactId>
-            <version>0.2</version>
+            <version>0.4-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>no.ssb.helidon</groupId>
             <artifactId>helidon-media-protobuf-json-server</artifactId>
-            <version>0.2</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>0.4</version>
         </dependency>
         <!-- Helidon uses jul -->
         <dependency>
@@ -59,29 +53,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
             <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.helidon.grpc</groupId>
-            <artifactId>helidon-grpc-server</artifactId>
-            <version>1.4.1</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>grpc-core</artifactId>
-                    <groupId>io.grpc</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>grpc-api</artifactId>
-                    <groupId>io.grpc</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jsr305</artifactId>
-                    <groupId>com.google.code.findbugs</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.annotation</groupId>
-                    <artifactId>javax.annotation-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

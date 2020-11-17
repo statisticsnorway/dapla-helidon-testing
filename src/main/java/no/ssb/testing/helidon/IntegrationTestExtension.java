@@ -1,17 +1,7 @@
 package no.ssb.testing.helidon;
 
-import io.grpc.BindableService;
-import io.grpc.Channel;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.Server;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.util.MutableHandlerRegistry;
 import io.helidon.config.Config;
 import io.helidon.config.ConfigSources;
-import io.helidon.config.spi.ConfigSource;
-import io.helidon.grpc.server.GrpcServer;
 import io.helidon.webserver.WebServer;
 import no.ssb.helidon.application.HelidonApplication;
 import no.ssb.helidon.application.HelidonApplicationBuilder;
@@ -21,15 +11,11 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import javax.inject.Inject;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import static io.helidon.config.ConfigSources.classpath;
 import static io.helidon.config.ConfigSources.file;
@@ -39,14 +25,12 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
 
     TestClient client;
     HelidonApplication application;
-    ManagedChannel grpcChannel;
-    Server server;
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
         Class<?> testClass = extensionContext.getRequiredTestClass();
 
-        List<Supplier<ConfigSource>> configSourceSupplierList = new LinkedList<>();
+        Config.Builder builder = Config.builder();
         ConfigOverride configOverride = testClass.getDeclaredAnnotation(ConfigOverride.class);
         if (configOverride != null) {
             String[] overrideArray = configOverride.value();
@@ -54,61 +38,34 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
             for (int i = 0; i < overrideArray.length; i += 2) {
                 configOverrideMap.put(overrideArray[i], overrideArray[i + 1]);
             }
-            configSourceSupplierList.add(ConfigSources.create(configOverrideMap));
+            builder.addSource(ConfigSources.create(configOverrideMap));
         }
         String overrideFile = ofNullable(System.getProperty("helidon.config.file")).orElseGet(() -> System.getenv("HELIDON_CONFIG_FILE"));
         if (overrideFile != null) {
-            configSourceSupplierList.add(file(overrideFile).optional());
+            builder.addSource(file(overrideFile).optional());
         }
         String profile = ofNullable(System.getProperty("helidon.config.profile")).orElseGet(() -> System.getenv("HELIDON_CONFIG_PROFILE"));
         if (profile == null) {
             profile = "dev";
         }
         if (profile.equalsIgnoreCase("dev")) {
-            configSourceSupplierList.add(classpath("application-dev.yaml"));
+            builder.addSource(classpath("application-dev.yaml"));
         } else if (profile.equalsIgnoreCase("azure")) {
-            configSourceSupplierList.add(classpath("application-azure.yaml"));
+            builder.addSource(classpath("application-azure.yaml"));
         } else {
             // default to dev
-            configSourceSupplierList.add(classpath("application-dev.yaml"));
+            builder.addSource(classpath("application-dev.yaml"));
         }
-        configSourceSupplierList.add(classpath("application.yaml"));
-        Config config = Config.builder().sources(configSourceSupplierList).build();
+        builder.addSource(classpath("application.yaml"));
+        Config config = builder.build();
 
         ServiceLoader<HelidonApplicationBuilder> applicationBuilderLoader = ServiceLoader.load(HelidonApplicationBuilder.class);
         HelidonApplicationBuilder applicationBuilder = applicationBuilderLoader.findFirst().orElseThrow();
         applicationBuilder.override(Config.class, config);
 
-        GrpcMockRegistryConfig applicationConfig = testClass.getDeclaredAnnotation(GrpcMockRegistryConfig.class);
-        if (applicationConfig != null) {
-            Class<? extends GrpcMockRegistry> registryClazz = applicationConfig.value();
-            Constructor<?> constructor = registryClazz.getDeclaredConstructors()[0];
-            GrpcMockRegistry grpcMockRegistry = (GrpcMockRegistry) constructor.newInstance();
-
-            String serverName = InProcessServerBuilder.generateName();
-
-            MutableHandlerRegistry serviceRegistry = new MutableHandlerRegistry();
-
-            for (BindableService bindableService : grpcMockRegistry) {
-                serviceRegistry.addService(bindableService);
-            }
-
-            server = InProcessServerBuilder.forName(serverName).fallbackHandlerRegistry(serviceRegistry).directExecutor().build().start();
-            ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
-
-            applicationBuilder.override(ManagedChannel.class, channel);
-        }
-
         application = applicationBuilder.build();
 
         application.start().toCompletableFuture().get(5, TimeUnit.SECONDS);
-
-        GrpcServer grpcServer = application.get(GrpcServer.class);
-        if (grpcServer != null) {
-            grpcChannel = ManagedChannelBuilder.forAddress("localhost", grpcServer.port())
-                    .usePlaintext()
-                    .build();
-        }
 
         WebServer webServer = application.get(WebServer.class);
         if (webServer != null) {
@@ -145,59 +102,13 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
                     throw new RuntimeException(e);
                 }
             }
-            if (Channel.class.isAssignableFrom(field.getType()) || ManagedChannel.class.isAssignableFrom(field.getType())) {
-                try {
-                    field.setAccessible(true);
-                    if (field.get(test) == null) {
-                        field.set(test, grpcChannel);
-                    }
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-            }
         }
     }
 
     @Override
     public void afterAll(ExtensionContext extensionContext) {
-        if (server != null) {
-            server.shutdown();
-        }
         if (application != null) {
             application.stop();
-        }
-        if (grpcChannel != null) {
-            shutdownAndAwaitTermination(grpcChannel);
-        }
-        if (server != null) {
-            awaitTerminationOfGrpcServer(server);
-        }
-    }
-
-    void shutdownAndAwaitTermination(ManagedChannel managedChannel) {
-        managedChannel.shutdown();
-        try {
-            if (!managedChannel.awaitTermination(5, TimeUnit.SECONDS)) {
-                managedChannel.shutdownNow(); // Cancel currently executing tasks
-                if (!managedChannel.awaitTermination(5, TimeUnit.SECONDS))
-                    System.err.println("ManagedChannel did not terminate");
-            }
-        } catch (InterruptedException ie) {
-            managedChannel.shutdownNow(); // (Re-)Cancel if current thread also interrupted
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    void awaitTerminationOfGrpcServer(Server server) {
-        try {
-            if (!server.awaitTermination(5, TimeUnit.SECONDS)) {
-                server.shutdownNow(); // Cancel currently executing tasks
-                if (!server.awaitTermination(5, TimeUnit.SECONDS))
-                    System.err.println("Server did not terminate");
-            }
-        } catch (InterruptedException e) {
-            server.shutdownNow(); // (Re-)Cancel if current thread also interrupted
-            Thread.currentThread().interrupt();
         }
     }
 }
