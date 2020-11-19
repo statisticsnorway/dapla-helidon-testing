@@ -2,6 +2,7 @@ package no.ssb.testing.helidon;
 
 import java.net.HttpURLConnection;
 import java.net.http.HttpResponse;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -9,11 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ResponseHelper<T> {
 
     private final HttpResponse<T> response;
-    private final T body;
+    private final AtomicReference<T> bodyRef = new AtomicReference<>();
 
     public ResponseHelper(HttpResponse<T> response) {
         this.response = response;
-        this.body = response.body();
     }
 
     public HttpResponse<T> response() {
@@ -21,6 +21,11 @@ public class ResponseHelper<T> {
     }
 
     public T body() {
+        T body = bodyRef.get();
+        if (body == null) {
+            body = response.body();
+            bodyRef.set(body);
+        }
         return body;
     }
 
@@ -31,42 +36,42 @@ public class ResponseHelper<T> {
                 matchingStatusCode = statusCode;
             }
         }
-        assertTrue(matchingStatusCode != -1, "Actual statusCode was " + response.statusCode() + " message: " + String.valueOf(body));
+        assertTrue(matchingStatusCode != -1, "Actual statusCode was " + response.statusCode() + " message: " + body());
         return this;
     }
 
     public ResponseHelper<T> expect403Forbidden() {
-        assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.statusCode(), String.valueOf(body));
+        assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.statusCode(), String.valueOf(body()));
         return this;
     }
 
     public ResponseHelper<T> expect401Unauthorized() {
-        assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.statusCode(), String.valueOf(body));
+        assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.statusCode(), String.valueOf(body()));
         return this;
     }
 
     public ResponseHelper<T> expect400BadRequest() {
-        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.statusCode(), String.valueOf(body));
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST, response.statusCode(), String.valueOf(body()));
         return this;
     }
 
     public ResponseHelper<T> expect404NotFound() {
-        assertEquals(HttpURLConnection.HTTP_NOT_FOUND, response.statusCode(), String.valueOf(body));
+        assertEquals(HttpURLConnection.HTTP_NOT_FOUND, response.statusCode(), String.valueOf(body()));
         return this;
     }
 
     public ResponseHelper<T> expect200Ok() {
-        assertEquals(HttpURLConnection.HTTP_OK, response.statusCode(), String.valueOf(body));
+        assertEquals(HttpURLConnection.HTTP_OK, response.statusCode(), String.valueOf(body()));
         return this;
     }
 
     public ResponseHelper<T> expect201Created() {
-        assertEquals(HttpURLConnection.HTTP_CREATED, response.statusCode(), String.valueOf(body));
+        assertEquals(HttpURLConnection.HTTP_CREATED, response.statusCode(), String.valueOf(body()));
         return this;
     }
 
     public ResponseHelper<T> expect204NoContent() {
-        assertEquals(HttpURLConnection.HTTP_NO_CONTENT, response.statusCode(), String.valueOf(body));
+        assertEquals(HttpURLConnection.HTTP_NO_CONTENT, response.statusCode(), String.valueOf(body()));
         return this;
     }
 }

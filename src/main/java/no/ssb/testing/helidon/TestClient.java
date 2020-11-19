@@ -133,16 +133,22 @@ public final class TestClient {
         );
     }
 
-    public <T> ResponseHelper<String> post(String uri, T pojo, String... headers) {
-        return post(uri, HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString(), headers);
+    public <T> ResponseHelper<String> postAsJson(String uri, T pojo, String... headers) {
+        String[] headersWithContentType = new String[headers.length + 2];
+        headersWithContentType[headersWithContentType.length - 2] = "Content-Type";
+        headersWithContentType[headersWithContentType.length - 1] = "application/json; charset=utf-8";
+        return post(uri, HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString(), headersWithContentType);
     }
 
-    public <R, T> ResponseHelper<R> post(String uri, T pojo, Class<R> responseClazz, String... headers) {
+    public <R, T> ResponseHelper<R> postAsJson(String uri, T pojo, Class<R> responseClazz, String... headers) {
+        String[] headersWithContentType = new String[headers.length + 2];
+        headersWithContentType[headersWithContentType.length - 2] = "Content-Type";
+        headersWithContentType[headersWithContentType.length - 1] = "application/json; charset=utf-8";
         return post(
                 uri,
                 HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8),
                 responseInfo -> new ProtobufSubscriber(responseClazz, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8).apply(responseInfo)),
-                headers
+                headersWithContentType
         );
     }
 
@@ -249,6 +255,9 @@ public final class TestClient {
         public CompletionStage<R> getBody() {
             return stringBodySubscriber.getBody()
                     .thenApply(json -> {
+                        if (json == null || json.isBlank()) {
+                            return null;
+                        }
                         try {
                             return ProtobufJsonUtils.toPojo(json, clazz);
                         } catch (Throwable e) {
