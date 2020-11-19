@@ -36,12 +36,12 @@
         <dependency>
             <groupId>no.ssb.helidon</groupId>
             <artifactId>helidon-application</artifactId>
-            <version>0.4-SNAPSHOT</version>
+            <version>0.4</version>
         </dependency>
         <dependency>
             <groupId>no.ssb.helidon</groupId>
             <artifactId>helidon-media-protobuf-json-server</artifactId>
-            <version>0.4</version>
+            <version>0.5</version>
         </dependency>
         <!-- Helidon uses jul -->
         <dependency>
