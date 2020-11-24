@@ -40,22 +40,19 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
             }
             builder.addSource(ConfigSources.create(configOverrideMap));
         }
-        String overrideFile = ofNullable(System.getProperty("helidon.config.file")).orElseGet(() -> System.getenv("HELIDON_CONFIG_FILE"));
+        String overrideFile = ofNullable(System.getProperty("helidon.config.file"))
+                .orElseGet(() -> System.getenv("HELIDON_CONFIG_FILE"));
         if (overrideFile != null) {
             builder.addSource(file(overrideFile).optional());
         }
-        String profile = ofNullable(System.getProperty("helidon.config.profile")).orElseGet(() -> System.getenv("HELIDON_CONFIG_PROFILE"));
-        if (profile == null) {
-            profile = "dev";
-        }
-        if (profile.equalsIgnoreCase("dev")) {
-            builder.addSource(classpath("application-dev.yaml"));
-        } else if (profile.equalsIgnoreCase("azure")) {
-            builder.addSource(classpath("application-azure.yaml"));
-        } else {
-            // default to dev
-            builder.addSource(classpath("application-dev.yaml"));
-        }
+        String profile = ofNullable(System.getProperty("helidon.config.profile"))
+                .orElseGet(() -> ofNullable(System.getenv("HELIDON_CONFIG_PROFILE"))
+                        .orElse("dev") // default
+                );
+        String profileFilename = String.format("application-%s.yaml", profile);
+        builder.addSource(file(profileFilename).optional());
+        builder.addSource(classpath(profileFilename).optional());
+        builder.addSource(file("conf/application.yaml").optional());
         builder.addSource(classpath("application.yaml"));
         Config config = builder.build();
 
