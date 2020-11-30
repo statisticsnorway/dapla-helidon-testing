@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import javax.inject.Inject;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -59,6 +60,16 @@ public class IntegrationTestExtension implements BeforeEachCallback, BeforeAllCa
         ServiceLoader<HelidonApplicationBuilder> applicationBuilderLoader = ServiceLoader.load(HelidonApplicationBuilder.class);
         HelidonApplicationBuilder applicationBuilder = applicationBuilderLoader.findFirst().orElseThrow();
         applicationBuilder.override(Config.class, config);
+
+        MockRegistryConfig applicationConfig = testClass.getDeclaredAnnotation(MockRegistryConfig.class);
+        if (applicationConfig != null) {
+            Class<? extends MockRegistry> registryClazz = applicationConfig.value();
+            Constructor<?> constructor = registryClazz.getDeclaredConstructors()[0];
+            MockRegistry mockRegistry = (MockRegistry) constructor.newInstance();
+            for (Object mock : mockRegistry) {
+                applicationBuilder.override(mock.getClass(), mock);
+            }
+        }
 
         application = applicationBuilder.build();
 

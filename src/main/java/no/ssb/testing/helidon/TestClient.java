@@ -135,6 +135,9 @@ public final class TestClient {
 
     public <T> ResponseHelper<String> postAsJson(String uri, T pojo, String... headers) {
         String[] headersWithContentType = new String[headers.length + 2];
+        for (int i = 0; i < headers.length; i++) {
+            headersWithContentType[i] = headers[i];
+        }
         headersWithContentType[headersWithContentType.length - 2] = "Content-Type";
         headersWithContentType[headersWithContentType.length - 1] = "application/json; charset=utf-8";
         return post(uri, HttpRequest.BodyPublishers.ofString(ProtobufJsonUtils.toString(pojo), StandardCharsets.UTF_8), HttpResponse.BodyHandlers.ofString(), headersWithContentType);
@@ -142,6 +145,9 @@ public final class TestClient {
 
     public <R, T> ResponseHelper<R> postAsJson(String uri, T pojo, Class<R> responseClazz, String... headers) {
         String[] headersWithContentType = new String[headers.length + 2];
+        for (int i = 0; i < headers.length; i++) {
+            headersWithContentType[i] = headers[i];
+        }
         headersWithContentType[headersWithContentType.length - 2] = "Content-Type";
         headersWithContentType[headersWithContentType.length - 1] = "application/json; charset=utf-8";
         return post(
