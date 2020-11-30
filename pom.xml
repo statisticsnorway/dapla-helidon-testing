@@ -3,7 +3,7 @@
 
     <groupId>no.ssb.helidon</groupId>
     <artifactId>helidon-testing</artifactId>
-    <version>0.12</version>
+    <version>0.13-SNAPSHOT</version>
     <name>${project.artifactId}</name>
 
     <properties>
@@ -29,7 +29,7 @@
         <connection>scm:git:git://github.com/statisticsnorway/dapla-helidon-testing.git</connection>
         <developerConnection>scm:git:git@github.com:statisticsnorway/dapla-helidon-testing.git</developerConnection>
         <url>https://github.com/statisticsnorway/dapla-helidon-testing</url>
-        <tag>helidon-testing-0.12</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <dependencies>
